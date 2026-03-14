@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BASI JAPAN 組織図</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Noto+Sans+JP:wght@300;400;500&display=swap');
+
+  :root {
+    --red: #E8272A; --red-dark: #c0191c; --red-light: #fff0f0;
+    --bg: #f2f2f2; --paper: #fff; --ink: #1a1a1a; --muted: #888; --line: #ccc;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); font-family: 'Noto Sans JP', sans-serif; color: var(--ink); min-height: 100vh; }
+
+  header { background: var(--red); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 10px rgba(232,39,42,0.3); position: sticky; top: 0; z-index: 100; }
+  .header-title { font-family: 'Montserrat', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 0.15em; color: white; }
+  .header-sub { font-size: 10px; color: rgba(255,255,255,0.65); letter-spacing: 0.18em; margin-top: 2px; font-family: 'Montserrat', sans-serif; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .save-pill { font-size: 11px; color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 4px 12px; transition: all 0.3s; white-space: nowrap; }
+  .save-pill.saved { background: rgba(255,255,255,0.3); color: white; }
+  .header-btn { font-size: 11px; color: white; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); border-radius: 20px; padding: 5px 14px; cursor: pointer; font-family: 'Noto Sans JP', sans-serif; white-space: nowrap; transition: background 0.15s; }
+  .header-btn:hover { background: rgba(255,255,255,0.3); }
+
+  .canvas { overflow: auto; padding: 40px 48px 80px; }
+  .h-tree { display: inline-flex; flex-direction: row; align-items: center; }
+
+  /* Connectors */
+  .v-bar { width: 2px; background: var(--line); align-self: stretch; margin: 14px 0; }
+  .branches { display: flex; flex-direction: column; justify-content: center; }
+  .branch-row { display: flex; flex-direction: row; align-items: center; }
+  .branch-gap { height: 10px; }
+  .h-stub { width: 20px; height: 2px; background: var(--line); flex-shrink: 0; }
+  .h-long { width: 36px; height: 2px; background: var(--line); flex-shrink: 0; }
+  .h-med  { width: 24px; height: 2px; background: var(--line); flex-shrink: 0; }
+
+  /* NODE */
+  .node { background: var(--paper); border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 6px; padding: 8px 12px; min-width: 120px; max-width: 175px; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.06); transition: box-shadow 0.15s, transform 0.12s; position: relative; margin: 3px 0; flex-shrink: 0; }
+  .node:hover { box-shadow: 0 4px 16px rgba(232,39,42,0.18); transform: translateX(2px); border-color: var(--red); }
+  .node.no-click { cursor: default; }
+  .node.no-click:hover { transform: none; box-shadow: 0 2px 6px rgba(0,0,0,0.06); border-color: var(--line); }
+  .node.has-memo::after { content: '📝'; position: absolute; top: -7px; right: -7px; font-size: 11px; background: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 4px rgba(0,0,0,0.15); }
+
+  .lv-president { border-left-color: #111; background: #1a1a1a; min-width: 150px; }
+  .lv-coo      { border-left-color: var(--red); background: #fff5f5; }
+  .lv-director { border-left-color: #3a5abf; background: #f0f4ff; min-width: 140px; }
+  .lv-dept  { min-width: 140px; }
+  .lv-sub   { min-width: 115px; font-size: 0.95em; }
+  .lv-studio { min-width: 105px; }
+  .lv-staff { min-width: 110px; border-left-color: #bbb; }
+
+  .node-co    { font-size: 8px; color: rgba(255,255,255,0.45); letter-spacing: 0.12em; text-transform: uppercase; font-family: 'Montserrat',sans-serif; margin-bottom: 1px; }
+  .node-name  { font-family: 'Montserrat',sans-serif; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .node-name.white { color: white; }
+  .node-title { font-size: 9px; color: var(--muted); margin-top: 2px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .node-title.white { color: rgba(255,255,255,0.55); }
+  .node-head  { font-size: 9px; margin-top: 2px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .node-loc   { font-size: 8px; color: #bbb; margin-top: 2px; }
+  .node-role  { font-size: 9px; color: #555; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-top: 1px solid #f0f0f0; padding-top: 3px; margin-top: 4px; }
+  .node-memo-preview { font-size: 8px; color: #888; margin-top: 3px; background: #f5f5f5; border-radius: 3px; padding: 2px 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 155px; }
+
+  .co-pill { background: white; border: 1px solid #ddd; border-radius: 4px; padding: 5px 12px; font-size: 9px; font-weight: 700; letter-spacing: 0.15em; color: #aaa; font-family: 'Montserrat',sans-serif; text-transform: uppercase; white-space: nowrap; cursor: default; margin: 4px 0; }
+
+  .unassigned-wrap { margin-top: 40px; }
+  .unassigned-label { font-size: 10px; color: #bbb; letter-spacing: 0.15em; text-transform: uppercase; font-family: 'Montserrat',sans-serif; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+  .unassigned-label::after { content:''; flex:1; height:1px; background:#ddd; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { display: flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; border: 1px solid #ddd; background: white; font-size: 12px; cursor: pointer; transition: all 0.12s; }
+  .chip:hover { border-color: var(--red); background: var(--red-light); }
+  .chip-dot { width: 6px; height: 6px; border-radius: 50%; background: #ccc; }
+  .chip-loc { font-size: 10px; color: #bbb; }
+  .node-role { font-size: 9px; color: #555; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-top: 1px solid #f0f0f0; padding-top: 3px; max-width: 160px; }
+  .node-emp   { font-size: 8px; font-weight: 600; letter-spacing: 0.08em; padding: 1px 5px; border-radius: 3px; display: inline-block; margin-top: 3px; font-family: 'Montserrat',sans-serif; }
+  .emp-staff     { background: #e8f5e8; color: #3a7a3a; }
+  .emp-outsource { background: #eef3ff; color: #3a5abf; }
+  .emp-part      { background: #fff8ee; color: #c07000; }
+
+  /* MODAL */
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: none; align-items: flex-end; justify-content: center; }
+  .overlay.open { display: flex; }
+  .modal { background: var(--paper); border-radius: 20px 20px 0 0; width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; padding-bottom: 24px; animation: up 0.22s ease; }
+  @media (min-width:600px) { .overlay { align-items:center; } .modal { border-radius:12px; max-height:84vh; margin:20px; } }
+  @keyframes up { from{transform:translateY(30px);opacity:0} to{transform:translateY(0);opacity:1} }
+  .modal-handle { width: 36px; height: 4px; background: var(--line); border-radius: 2px; margin: 14px auto 0; }
+  .modal-header { padding: 14px 20px 12px; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
+  .modal-person { display: flex; align-items: center; gap: 10px; }
+  .modal-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'Montserrat',sans-serif; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .modal-name { font-size: 15px; font-weight: 600; font-family: 'Montserrat',sans-serif; }
+  .modal-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .modal-x { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: none; color: var(--muted); font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+  .modal-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+  .field label { display: block; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; font-family: 'Montserrat',sans-serif; font-weight: 600; }
+  .field input, .field textarea, .field select { width: 100%; padding: 11px 13px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font-size: 14px; font-family: 'Noto Sans JP',sans-serif; font-weight: 300; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--red); background: white; }
+  .field textarea { resize: vertical; min-height: 120px; font-size: 13px; line-height: 1.6; }
+  .modal-actions { padding: 2px 20px 8px; display: flex; flex-direction: column; gap: 8px; }
+  .btn-save { width: 100%; padding: 14px; background: var(--red); color: white; border: none; border-radius: 10px; font-size: 14px; cursor: pointer; font-family: 'Noto Sans JP',sans-serif; transition: background 0.15s; }
+  .btn-save:hover { background: var(--red-dark); }
+  .btn-sec { width: 100%; padding: 11px; background: none; color: var(--muted); border: 1px solid var(--line); border-radius: 10px; font-size: 13px; cursor: pointer; font-family: 'Noto Sans JP',sans-serif; }
+
+  .dept-setting-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .dept-setting-row:last-child { border-bottom: none; }
+  .dept-color-bar { width: 4px; height: 40px; border-radius: 2px; flex-shrink: 0; }
+  .dept-setting-info { flex: 1; }
+  .dept-setting-name { font-size: 13px; font-weight: 600; font-family: 'Montserrat',sans-serif; }
+  .dept-setting-sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+  .dept-head-select { padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); font-size: 13px; font-family: 'Noto Sans JP',sans-serif; outline: none; min-width: 130px; -webkit-appearance: none; cursor: pointer; }
+  .dept-head-select:focus { border-color: var(--red); }
+
+  .hint { text-align: center; font-size: 11px; color: #bbb; padding: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="header-title">BASI JAPAN</div>
+    <div class="header-sub">Organization Chart</div>
+  </div>
+  <div class="header-right">
+    <button class="header-btn" onclick="openDeptSettings()">⚙️ 部門長を設定</button>
+    <div class="save-pill" id="savePill">自動保存</div>
+  </div>
+</header>
+
+<div class="canvas" id="canvas"></div>
+<div class="hint">ノードをクリックして編集 ／ 部門・サブ部門もクリックでメモを編集できます</div>
+
+<!-- Member modal -->
+<div class="overlay" id="memberOverlay" onclick="if(event.target===this)closeMemberModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-person">
+        <div class="modal-avatar" id="mAvatar" style="background:var(--red-light);color:var(--red)"></div>
+        <div><div class="modal-name" id="mName"></div><div class="modal-sub" id="mSub"></div><div id="modalTitle" style="font-size:10px;color:var(--red);margin-top:2px;font-family:Montserrat,sans-serif;letter-spacing:0.05em"></div></div>
+      </div>
+      <button class="modal-x" onclick="closeMemberModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label id="labelTitle">肩書き・役職</label><input type="text" id="inputTitle" placeholder="例：Executive Director..."></div>
+      <div class="field"><label id="labelRole">担当業務</label><input type="text" id="inputRole" placeholder="例：SNS管理、経理担当..."></div>
+      <div class="field" id="empField">
+        <label>雇用形態</label>
+        <select id="inputEmpType">
+          <option value="staff">社員</option>
+          <option value="outsource">業務委託</option>
+          <option value="part">アルバイト</option>
+        </select>
+      </div>
+      <div class="field" id="deptField">
+        <label>部門配置</label>
+        <select id="inputDept">
+          <option value="">未配置</option>
+          <optgroup label="Education（教育）">
+            <option value="edu_staff">Education — Staff（スタッフ教育）</option>
+            <option value="edu_course">Education — 養成コース</option>
+          </optgroup>
+          <optgroup label="Operations（店舗運営）">
+            <option value="ops_ginza">Operations — Tokyo / Ginza</option>
+            <option value="ops_daikan">Operations — Tokyo / Daikanyama</option>
+            <option value="ops_osaka">Operations — Osaka</option>
+            <option value="ops_hacomono">Operations — hacomono</option>
+            <option value="ops_quality">Operations — Studio Quality</option>
+          </optgroup>
+          <option value="biz">Business Dev（経営企画）</option>
+          <optgroup label="Marketing & PR（広報）">
+            <option value="mkt_sns">Marketing — SNS</option>
+            <option value="mkt_line">Marketing — LINE</option>
+            <option value="mkt_hp">Marketing — HP</option>
+          </optgroup>
+          <option value="hr">HR & Admin（人事・総務）</option>
+          <optgroup label="Finance（経理）">
+            <option value="fin_expense">Finance — 経費精算</option>
+            <option value="fin_payable">Finance — 債務管理</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="field"><label>メモ（詳細・引き継ぎ・備考）</label><textarea id="inputMemo" placeholder="担当業務の詳細、引き継ぎ事項、備考など..."></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="saveMemberModal()">保存する</button>
+      <button class="btn-sec" onclick="closeMemberModal()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- Dept/group memo modal -->
+<div class="overlay" id="groupOverlay" onclick="if(event.target===this)closeGroupModal()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-person">
+        <div class="modal-avatar" id="gAvatar" style="font-size:20px"></div>
+        <div><div class="modal-name" id="gName"></div><div class="modal-sub" id="gSub"></div></div>
+      </div>
+      <button class="modal-x" onclick="closeGroupModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label>メモ（目標・方針・課題・引き継ぎなど）</label>
+        <textarea id="groupMemo" placeholder="例：&#10;- 部門の目標・KPI&#10;- 重要な引き継ぎ&#10;- 現在の課題&#10;- 使用ツール・資料の場所"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="saveGroupModal()">保存する</button>
+      <button class="btn-sec" onclick="closeGroupModal()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<!-- Dept settings modal -->
+<div class="overlay" id="deptOverlay" onclick="if(event.target===this)closeDeptSettings()">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-header">
+      <div class="modal-person">
+        <div class="modal-avatar" style="background:#f0f5f0;color:#3a7a3a;font-size:20px">🏢</div>
+        <div><div class="modal-name">部門長の設定</div><div class="modal-sub">各部門の責任者を選択</div></div>
+      </div>
+      <button class="modal-x" onclick="closeDeptSettings()">×</button>
+    </div>
+    <div class="modal-body" id="deptSettingsBody"></div>
+    <div class="modal-actions">
+      <button class="btn-save" onclick="saveDeptSettings()">保存する</button>
+      <button class="btn-sec" onclick="closeDeptSettings()">キャンセル</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STRUCTURE ──
+// Top-level departments
+const DEPTS = [
+  { id:'edu',  name:'Education',      sub:'教育',     color:'#3a7a3a',
+    subs: [
+      { id:'edu_staff',  name:'Staff',    sub:'スタッフ教育' },
+      { id:'edu_course', name:'養成コース', sub:'Instructor Training' },
+    ]
+  },
+  { id:'ops',  name:'Operations',     sub:'店舗運営',  color:'#c07000',
+    subs: [
+      { id:'ops_tokyo',  name:'Tokyo Studio', sub:'Ginza & Daikanyama', virtual:true,
+        subs: [
+          { id:'ops_ginza',  name:'Ginza',       sub:'銀座' },
+          { id:'ops_daikan', name:'Daikanyama',   sub:'代官山' },
+        ]
+      },
+      { id:'ops_osaka',    name:'Osaka Studio', sub:'大阪' },
+      { id:'ops_hacomono',  name:'hacomono',       sub:'予約・顧客管理システム' },
+      { id:'ops_quality',   name:'Studio Quality', sub:'品質管理' },
+    ]
+  },
+  { id:'biz',  name:'Business Dev',   sub:'経営企画',  color:'#3a5abf' },
+  { id:'mkt',  name:'Marketing & PR', sub:'広報',     color:'#8b2abf',
+    subs: [
+      { id:'mkt_sns',  name:'SNS',  sub:'Instagram / Facebook' },
+      { id:'mkt_line', name:'LINE', sub:'LINEアカウント管理' },
+      { id:'mkt_hp',   name:'HP',   sub:'Website管理' },
+    ]
+  },
+  { id:'hr',   name:'HR & Admin',     sub:'人事・総務', color:'#bf5a2a' },
+  { id:'fin',  name:'Finance',        sub:'経理',     color:'#2a7abf',
+    subs: [
+      { id:'fin_expense', name:'経費精算', sub:'Expense Management' },
+      { id:'fin_payable', name:'債務管理', sub:'Accounts Payable' },
+    ]
+  },
+];
+
+const EXECS = [
+  { id:'juhancha', name:'JUHANCHA', title:'President',               co:'Basi Asia'          },
+  { id:'asako',    name:'ASAKO',    title:'Executive Director',       co:'BASI Pilates Japan'  },
+  { id:'yoko',     name:'YOKO',     title:'Executive Director',       co:'BASI Pilates Japan'  },
+  { id:'saki',     name:'SAKI',     title:'Marketing & PR Director', co:''                    },
+  { id:'hanako',   name:'HANAKO',   title:'HR & Admin Director',     co:''                    },
+];
+
+const DEFAULT_STAFF = [
+  { id:'betty',  name:'BETTY / Hitomi', title:'', role:'', dept:null, location:'Daikanyama', memo:'', empType:'staff' },
+  { id:'masa',   name:'MASA',           title:'', role:'', dept:null, location:'Daikanyama', memo:'', empType:'part' },
+  { id:'miho',   name:'MIHO',           title:'', role:'', dept:null, location:'Daikanyama', memo:'', empType:'outsource' },
+  { id:'chiho',  name:'CHIHO',          title:'', role:'', dept:null, location:'Daikanyama', memo:'', empType:'outsource' },
+  { id:'erina',  name:'ERINA',          title:'', role:'', dept:null, location:'Daikanyama', memo:'', empType:'outsource' },
+  { id:'marina', name:'MARINA',         title:'', role:'', dept:null, location:'Daikanyama', memo:'', empType:'outsource' },
+  { id:'mai',    name:'MAI',            title:'', role:'', dept:null, location:'Osaka',      memo:'', empType:'staff' },
+  { id:'ayako',  name:'AYAKO',          title:'', role:'', dept:null, location:'Osaka',      memo:'', empType:'staff' },
+  { id:'saho',   name:'SAHO',           title:'', role:'', dept:null, location:'Osaka',      memo:'', empType:'staff' },
+  { id:'yukari', name:'YUKARI',         title:'', role:'', dept:null, location:'Osaka',      memo:'', empType:'outsource' },
+  { id:'yumie',  name:'YUMIE',          title:'', role:'', dept:null, location:'Osaka',      memo:'', empType:'outsource' },
+  { id:'asa',    name:'ASA',            title:'', role:'', dept:null, location:'Osaka',      memo:'', empType:'outsource' },
+  { id:'maki',   name:'MAKI',    title:'Reception', role:'受付', dept:'ops_ginza', location:'Ginza', memo:'', empType:'staff' },
+  { id:'masae',  name:'MASAE',          title:'', role:'', dept:'ops_ginza', location:'Ginza', memo:'', empType:'outsource' },
+  { id:'keiko',  name:'KEIKO',          title:'', role:'', dept:'ops_ginza', location:'Ginza', memo:'', empType:'outsource' },
+];
+
+function load(key, fn) { try { const s=localStorage.getItem(key); if(s) return JSON.parse(s); } catch(e){} return fn(); }
+
+let execData  = load('basi-exec-v6',     () => { const d={}; EXECS.forEach(e=>d[e.id]={title:'',role:'',memo:''}); return d; });
+let staffData = load('basi-staff-v6',    () => JSON.parse(JSON.stringify(DEFAULT_STAFF)));
+let deptHeads = load('basi-deptHeads-v3',() => ({}));
+let groupMemos= load('basi-groupMemos-v1',() => ({}));
+
+let editingMemberId=null, editingMemberType=null, editingGroupId=null;
+
+function save() {
+  try {
+    localStorage.setItem('basi-exec-v6',      JSON.stringify(execData));
+    localStorage.setItem('basi-staff-v6',     JSON.stringify(staffData));
+    localStorage.setItem('basi-deptHeads-v3', JSON.stringify(deptHeads));
+    localStorage.setItem('basi-groupMemos-v1',JSON.stringify(groupMemos));
+  } catch(e) {}
+  const p=document.getElementById('savePill');
+  p.textContent='保存しました ✓'; p.classList.add('saved');
+  setTimeout(()=>{p.textContent='自動保存';p.classList.remove('saved');},2000);
+}
+
+function initials(n){ return n.trim().split(/[\s\/]/).slice(0,2).map(p=>(p[0]||'').toUpperCase()).join(''); }
+function getPersonName(id){ const e=EXECS.find(x=>x.id===id); if(e) return e.name; const m=staffData.find(x=>x.id===id); return m?m.name:''; }
+function allPeople(){ return [...EXECS.map(e=>({id:e.id,name:e.name})),...staffData.map(m=>({id:m.id,name:m.name}))]; }
+
+// Flatten all leaf dept IDs
+function allLeafIds(dept) {
+  if (!dept.subs) return [dept.id];
+  return dept.subs.flatMap(s => allLeafIds(s));
+}
+
+// ── NODE BUILDER ──
+function mkNode({lvClass,name,title,role,co,white,loc,memo,color,headLabel,empType,onclick}){
+  const d=document.createElement('div');
+  d.className=`node ${lvClass}`+(memo?' has-memo':'');
+  if(color) d.style.borderLeftColor=color;
+  if(!onclick) d.classList.add('no-click'); else d.onclick=onclick;
+  const EMP_LABEL = { staff:'社員', outsource:'業務委託', part:'アルバイト' };
+  let html='';
+  if(co) html+=`<div class="node-co">${co}</div>`;
+  html+=`<div class="node-name${white?' white':''}">${name}</div>`;
+  if(title) html+=`<div class="node-title${white?' white':''}">${title}</div>`;
+  if(role) html+=`<div class="node-role">${role}</div>`;
+  if(empType && EMP_LABEL[empType]) html+=`<div class="node-emp emp-${empType}">${EMP_LABEL[empType]}</div>`;
+  if(headLabel) html+=`<div class="node-head" style="color:${color||'#666'}">${headLabel}</div>`;
+  if(loc) html+=`<div class="node-loc">${loc}</div>`;
+  if(memo) html+=`<div class="node-memo-preview">${memo.slice(0,38)}${memo.length>38?'…':''}</div>`;
+  d.innerHTML=html;
+  return d;
+}
+
+// ── BRACKET BUILDER ──
+// Wraps a node with a bracket to its children
+function withBracket(parentEl, childEls, hWidth) {
+  if (!childEls || childEls.length === 0) return parentEl;
+  const w=document.createElement('div'); w.style.cssText='display:flex;flex-direction:row;align-items:center';
+  w.appendChild(parentEl);
+  const h=document.createElement('div'); h.style.cssText=`width:${hWidth||24}px;height:2px;background:#ccc;flex-shrink:0`; w.appendChild(h);
+  const bw=document.createElement('div'); bw.style.cssText='display:flex;flex-direction:row;align-items:stretch';
+  if(childEls.length>1){const vb=document.createElement('div');vb.className='v-bar';bw.appendChild(vb);}
+  const br=document.createElement('div'); br.className='branches';
+  childEls.forEach((ce,i)=>{
+    const row=document.createElement('div'); row.className='branch-row';
+    if(childEls.length>1){const s=document.createElement('div');s.className='h-stub';row.appendChild(s);}
+    row.appendChild(ce); br.appendChild(row);
+    if(i<childEls.length-1){const g=document.createElement('div');g.className='branch-gap';br.appendChild(g);}
+  });
+  bw.appendChild(br); w.appendChild(bw);
+  return w;
+}
+
+// ── BUILD DEPT SUBTREE ──
+function buildDeptTree(dept, deptColor) {
+  const headId = deptHeads[dept.id];
+  const headName = headId ? getPersonName(headId) : null;
+  const memo = groupMemos[dept.id]||'';
+
+  // Leaf dept: show members
+  if (!dept.subs) {
+    const members = staffData.filter(m=>m.dept===dept.id);
+    // Also include execs assigned to this dept
+    const execMembers = EXECS.filter(e => e.id !== 'juhancha' && (execData[e.id]||{}).dept === dept.id);
+    const dn = mkNode({
+      lvClass: dept.virtual ? 'lv-studio' : (dept.id.includes('_')?'lv-sub':'lv-dept'),
+      name: dept.name, title: dept.sub, color: deptColor,
+      headLabel: headName?`👤 ${headName}`:null, memo,
+      onclick: ()=>openGroupModal(dept.id, dept.name, dept.sub, deptColor)
+    });
+    const allMembers = [
+      ...execMembers.map(e => {
+        const ed = execData[e.id]||{};
+        return mkNode({ lvClass:'lv-staff', name:e.name, title:ed.staffTitle||'', role:ed.staffRole||'', memo:ed.memo, empType:'staff', onclick:()=>openMemberModal(e.id,'exec-staff') });
+      }),
+      ...members.map(m=>mkNode({ lvClass:'lv-staff', name:m.name, title:m.title||'', role:m.role||'', loc:m.location, memo:m.memo, empType:m.empType||'', onclick:()=>openMemberModal(m.id,'staff') }))
+    ];
+    if (!allMembers.length) return dn;
+    return withBracket(dn, allMembers, 20);
+  }
+
+  // Parent dept with subs
+  const dn = mkNode({
+    lvClass: dept.id.includes('_')?'lv-sub':'lv-dept',
+    name: dept.name, title: dept.sub, color: deptColor,
+    headLabel: headName?`👤 ${headName}`:null, memo,
+    onclick: ()=>openGroupModal(dept.id, dept.name, dept.sub, deptColor)
+  });
+  const subTrees = dept.subs.map(s => buildDeptTree(s, deptColor));
+  return withBracket(dn, subTrees, 20);
+}
+
+// ── RENDER ──
+function renderTree() {
+  const canvas=document.getElementById('canvas');
+  canvas.innerHTML='';
+  const tree=document.createElement('div');
+  tree.className='h-tree';
+  canvas.appendChild(tree);
+
+  // President
+  const pres=mkNode({lvClass:'lv-president',name:'JUHANCHA',title:execData['juhancha']?.title||'President',role:execData['juhancha']?.role||'',co:'Basi Asia',white:true,memo:execData['juhancha']?.memo,onclick:()=>openMemberModal('juhancha','exec')});
+
+  // Company pill
+  const coPill=document.createElement('div'); coPill.className='co-pill'; coPill.style.cssText+='align-self:center;margin-bottom:4px'; coPill.textContent='BASI PILATES JAPAN';
+
+  // Paired rows: ASAKO+SAKI, YOKO+HANAKO
+  const pairs = [
+    { cooId:'asako', dirId:'saki' },
+    { cooId:'yoko',  dirId:'hanako' },
+  ];
+
+  const pairRows = pairs.map(({cooId, dirId}) => {
+    const ec=EXECS.find(x=>x.id===cooId); const edc=execData[cooId]||{};
+    const ed=EXECS.find(x=>x.id===dirId);  const edd=execData[dirId]||{};
+
+    const cooNode = mkNode({lvClass:'lv-coo',      name:ec.name, title:edc.title||ec.title, role:edc.role||'', memo:edc.memo, onclick:()=>openMemberModal(cooId,'exec')});
+    const dirNode = mkNode({lvClass:'lv-director', name:ed.name, title:edd.title||ed.title, role:edd.role||'', memo:edd.memo, onclick:()=>openMemberModal(dirId,'exec')});
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;flex-direction:row;align-items:center;gap:0';
+
+    // COO node
+    row.appendChild(cooNode);
+    // H connector COO→Director
+    const hc = document.createElement('div'); hc.className='h-long'; row.appendChild(hc);
+    // Director node
+    row.appendChild(dirNode);
+
+    return row;
+  });
+
+  // Stack pairs vertically with gap
+  const execStack = document.createElement('div');
+  execStack.style.cssText = 'display:flex;flex-direction:column;justify-content:center;gap:6px';
+  execStack.appendChild(coPill);
+  pairRows.forEach(r => execStack.appendChild(r));
+
+  // Depts
+  const deptTrees = DEPTS.map(dept => buildDeptTree(dept, dept.color));
+
+  // Directors bracket → depts
+  const bwDept=document.createElement('div'); bwDept.style.cssText='display:flex;flex-direction:row;align-items:stretch';
+  const vbDept=document.createElement('div'); vbDept.className='v-bar'; bwDept.appendChild(vbDept);
+  const brDept=document.createElement('div'); brDept.className='branches';
+  deptTrees.forEach((dt,i)=>{
+    const row=document.createElement('div'); row.className='branch-row';
+    const s=document.createElement('div'); s.className='h-stub'; row.appendChild(s);
+    row.appendChild(dt); brDept.appendChild(row);
+    if(i<deptTrees.length-1){const g=document.createElement('div');g.className='branch-gap';brDept.appendChild(g);}
+  });
+  bwDept.appendChild(brDept);
+
+  // execStack → depts
+  const cooWrap=document.createElement('div'); cooWrap.style.cssText='display:flex;flex-direction:row;align-items:center';
+  cooWrap.appendChild(execStack);
+  const h2=document.createElement('div'); h2.className='h-long'; cooWrap.appendChild(h2);
+  cooWrap.appendChild(bwDept);
+
+  const presWrap=document.createElement('div'); presWrap.style.cssText='display:flex;flex-direction:row;align-items:center';
+  presWrap.appendChild(pres);
+  const h1=document.createElement('div'); h1.className='h-long'; presWrap.appendChild(h1);
+  presWrap.appendChild(cooWrap);
+  tree.appendChild(presWrap);
+
+  // Unassigned
+  const unassigned = staffData.filter(m=>!m.dept);
+  const unassignedExecs = EXECS.filter(e => e.id !== 'juhancha'); // always show all 4
+  if(unassigned.length > 0 || unassignedExecs.length > 0){
+    const uw=document.createElement('div'); uw.className='unassigned-wrap';
+    uw.innerHTML='<div class="unassigned-label">未配置メンバー（クリックして部門を割り当て）</div>';
+    const chips=document.createElement('div'); chips.className='chips';
+    const EMP_LABEL2 = { staff:'社員', outsource:'業務委託', part:'アルバイト' };
+    // Exec chips first
+    unassignedExecs.forEach(e=>{
+      const ed=execData[e.id]||{};
+      const c=document.createElement('div'); c.className='chip';
+      c.innerHTML=`<div class="chip-dot" style="background:#E8272A"></div><span>${e.name}</span><span class="chip-loc">${ed.title||e.title}</span><span class="node-emp emp-staff" style="margin-left:2px">社員</span>`;
+      c.onclick=()=>openMemberModal(e.id,'exec-staff');
+      chips.appendChild(c);
+    });
+    unassigned.forEach(m=>{
+      const c=document.createElement('div'); c.className='chip';
+      const empBadge = m.empType && EMP_LABEL2[m.empType] ? `<span class="node-emp emp-${m.empType}" style="margin-left:2px">${EMP_LABEL2[m.empType]}</span>` : '';
+      c.innerHTML=`<div class="chip-dot"></div><span>${m.name}</span><span class="chip-loc">${m.location}</span>${empBadge}${m.memo?'📝':''}`;
+      c.onclick=()=>openMemberModal(m.id,'staff');
+      chips.appendChild(c);
+    });
+    uw.appendChild(chips); canvas.appendChild(uw);
+  }
+}
+
+// ── MEMBER MODAL ──
+function openMemberModal(id,type){
+  editingMemberId=id; editingMemberType=type;
+  let name,currentTitle,role,dept,memo;
+  if(type==='exec'){
+    const e=EXECS.find(x=>x.id===id); const ed=execData[id]||{};
+    name=e.name; currentTitle=ed.title||e.title; role=ed.role||''; dept=ed.dept||''; memo=ed.memo||'';
+    const canAssign = id !== 'juhancha';
+    document.getElementById('deptField').style.display = canAssign ? 'block' : 'none';
+    document.getElementById('empField').style.display='none';
+    document.getElementById('inputDept').value = dept;
+    document.getElementById('modalTitle').textContent = '役員';
+    document.getElementById('labelTitle').textContent = '肩書き（役員）';
+    document.getElementById('labelRole').textContent = '担当業務（役員として）';
+  } else if(type==='exec-staff'){
+    const e=EXECS.find(x=>x.id===id); const ed=execData[id]||{};
+    name=e.name; currentTitle=ed.staffTitle||''; role=ed.staffRole||''; dept=ed.dept||''; memo=ed.memo||'';
+    document.getElementById('deptField').style.display='block';
+    document.getElementById('empField').style.display='none';
+    document.getElementById('inputDept').value = dept;
+    document.getElementById('modalTitle').textContent = 'スタジオ担当';
+    document.getElementById('labelTitle').textContent = '肩書き（スタジオ担当として）';
+    document.getElementById('labelRole').textContent = '担当業務（スタジオでの業務）';
+  } else {
+    const m=staffData.find(x=>x.id===id);
+    name=m.name; currentTitle=m.title||''; role=m.role||''; dept=m.dept||''; memo=m.memo||'';
+    document.getElementById('deptField').style.display='block';
+    document.getElementById('empField').style.display='block';
+    document.getElementById('inputEmpType').value=m.empType||'staff';
+    document.getElementById('modalTitle').textContent = '';
+    document.getElementById('labelTitle').textContent = '肩書き・役職';
+    document.getElementById('labelRole').textContent = '担当業務';
+  }
+  document.getElementById('mAvatar').textContent=initials(name);
+  document.getElementById('mName').textContent=name;
+  document.getElementById('mSub').textContent=currentTitle||'—';
+  document.getElementById('inputTitle').value=currentTitle;
+  document.getElementById('inputRole').value=role;
+  document.getElementById('inputDept').value=dept;
+  document.getElementById('inputMemo').value=memo;
+  document.getElementById('memberOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('inputMemo').focus(),300);
+}
+function closeMemberModal(){document.getElementById('memberOverlay').classList.remove('open');}
+function saveMemberModal(){
+  const title=document.getElementById('inputTitle').value.trim();
+  const role=document.getElementById('inputRole').value.trim();
+  const dept=document.getElementById('inputDept').value||null;
+  const memo=document.getElementById('inputMemo').value.trim();
+  if(editingMemberType==='exec'){
+    execData[editingMemberId]={...execData[editingMemberId],title,role,memo,dept};
+  } else if(editingMemberType==='exec-staff'){
+    // Save staff-side role separately, keep dept in sync
+    execData[editingMemberId]={...execData[editingMemberId],staffTitle:title,staffRole:role,memo,dept};
+  } else {
+    const m=staffData.find(x=>x.id===editingMemberId);
+    if(m){m.title=title;m.role=role;m.dept=dept;m.memo=memo;m.empType=document.getElementById('inputEmpType').value;}
+  }
+  closeMemberModal(); save(); renderTree();
+}
+
+// ── GROUP/DEPT MEMO MODAL ──
+function openGroupModal(id, name, sub, color){
+  editingGroupId=id;
+  const av=document.getElementById('gAvatar');
+  av.textContent='🏢'; av.style.background=(color||'#aaa')+'22';
+  document.getElementById('gName').textContent=name;
+  document.getElementById('gSub').textContent=sub;
+  document.getElementById('groupMemo').value=groupMemos[id]||'';
+  document.getElementById('groupOverlay').classList.add('open');
+  setTimeout(()=>document.getElementById('groupMemo').focus(),300);
+}
+function closeGroupModal(){document.getElementById('groupOverlay').classList.remove('open');}
+function saveGroupModal(){
+  groupMemos[editingGroupId]=document.getElementById('groupMemo').value.trim();
+  closeGroupModal(); save(); renderTree();
+}
+
+// ── DEPT SETTINGS ──
+function openDeptSettings(){
+  const body=document.getElementById('deptSettingsBody'); body.innerHTML='';
+  const people=allPeople();
+  // Show all settable groups (depts + subs)
+  function addRows(depts, color){
+    depts.forEach(dept=>{
+      if(dept.virtual){ if(dept.subs) addRows(dept.subs, color); return; }
+      const row=document.createElement('div'); row.className='dept-setting-row';
+      const bar=document.createElement('div'); bar.className='dept-color-bar'; bar.style.background=color||dept.color;
+      const info=document.createElement('div'); info.className='dept-setting-info';
+      info.innerHTML=`<div class="dept-setting-name">${dept.name}</div><div class="dept-setting-sub">${dept.sub}</div>`;
+      const sel=document.createElement('select'); sel.className='dept-head-select'; sel.id=`dh_${dept.id}`;
+      sel.innerHTML='<option value="">未設定</option>'+people.map(p=>`<option value="${p.id}" ${deptHeads[dept.id]===p.id?'selected':''}>${p.name}</option>`).join('');
+      row.appendChild(bar); row.appendChild(info); row.appendChild(sel);
+      body.appendChild(row);
+      if(dept.subs) addRows(dept.subs, color||dept.color);
+    });
+  }
+  addRows(DEPTS);
+  document.getElementById('deptOverlay').classList.add('open');
+}
+function closeDeptSettings(){document.getElementById('deptOverlay').classList.remove('open');}
+function saveDeptSettings(){
+  function saveRows(depts){
+    depts.forEach(dept=>{
+      if(!dept.virtual){
+        const el=document.getElementById(`dh_${dept.id}`);
+        if(el) deptHeads[dept.id]=el.value||null;
+      }
+      if(dept.subs) saveRows(dept.subs);
+    });
+  }
+  saveRows(DEPTS);
+  closeDeptSettings(); save(); renderTree();
+}
+
+renderTree();
+</script>
+</body>
+</html>
